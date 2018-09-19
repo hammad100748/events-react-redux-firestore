@@ -9,7 +9,7 @@ const incrementCounter = (state,payload) => {
     return { ...state, data: state.data + 1 };
 }
 
-const decrementCounter = (state,payload) => {
+const decrementCounter = (state,payload) => { 
     return { ...state, data: state.data - 1 };
 }
 

@@ -99,8 +99,8 @@ class EventForm extends Component {
     values.date = moment(values.date).format();
     values.venueLatLng = this.state.venueLatLng;
     if (this.props.initialValues.id) {
-      this.props.history.goBack();
       this.props.updateEvent(values);
+      this.props.history.goBack();
     } else {
       const newEvent = {
         ...values,

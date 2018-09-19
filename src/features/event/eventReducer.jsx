@@ -67,7 +67,7 @@ export const updateEvent = (state, payload) => {
         ...state.filter(event => event.id !== payload.event.id),
         Object.assign({},payload.event)
     ]    
-}
+} 
 
 export const deleteEvent = (state, payload) => {
     return [...state.filter(event => event.id !== payload.eventId)]
