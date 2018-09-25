@@ -9,7 +9,7 @@ import EventActivity from "../eventActivity/EventActivity";
 
 const mapState = state => ({
   events: state.firestore.ordered.events,
-  loading: state.async.loading
+  loading: state.async.loading 
 });
 
 const actions = {
@@ -23,6 +23,7 @@ class EventDashboard extends Component {
 
   render() {
     const { events, loading } = this.props;
+    console.log(loading);
     if (loading) return <LoadingComponent inverted={true} />;
     return (
       <Grid>
