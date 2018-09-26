@@ -2,6 +2,7 @@ import moment from "moment";
 import { toastr } from "react-redux-toastr";
 import cuid from "cuid";
 import { asyncActionError, asyncActionStart, asyncActionFinish } from '../async/asyncActions';
+
 export const updateProfile = user => async (
   dispatch,
   getState,
