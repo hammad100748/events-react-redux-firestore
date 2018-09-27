@@ -1,7 +1,7 @@
 import React from "react";
 import format from "date-fns/format";
 import { Segment, Image, Item, Header, Button } from "semantic-ui-react";
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom";
 const eventImageStyle = {
   filter: "brightness(30%)"
 };
@@ -15,7 +15,11 @@ const eventImageTextStyle = {
   color: "white"
 };
 
-const EventDetailedHeader = ({event}) => {
+const EventDetailedHeader = ({ event, isHost, isGoing, goingToEvent, cancelGoingToEvent }) => {
+  let eventDate;
+  if (event.date) {
+    eventDate = event.date.toDate();
+  }
   
   return (
     <Segment.Group>
@@ -35,7 +39,7 @@ const EventDetailedHeader = ({event}) => {
                   content={event.title}
                   style={{ color: "white" }}
                 />
-                <p>{format(event.date,'dddd Do MMMM')}</p>
+                <p>{format(eventDate, "dddd Do MMMM")}</p>
                 <p>
                   Hosted by <strong>{event.hostedBy}</strong>
                 </p>
@@ -46,12 +50,22 @@ const EventDetailedHeader = ({event}) => {
       </Segment>
 
       <Segment attached="bottom">
-        <Button>Cancel My Place</Button>
-        <Button color="teal">JOIN THIS EVENT</Button>
-
-        <Button as={Link} to={`/manage/${event.id}`} color="orange" floated="right">
-          Manage Event
-        </Button>
+        {!isHost && (
+          <div>
+            {isGoing ? (
+              <Button onClick={() => cancelGoingToEvent(event)} >Cancel My Place</Button>
+            ) : (
+              <Button color="teal" onClick={() => goingToEvent(event)}>
+                JOIN THIS EVENT
+              </Button>
+            )}
+          </div>
+        )}
+        {isHost && (
+          <Button as={Link} to={`/manage/${event.id}`} color="orange">
+            Manage Event
+          </Button>
+        )}
       </Segment>
     </Segment.Group>
   );

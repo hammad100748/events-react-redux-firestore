@@ -10,7 +10,6 @@ const initialState = {
 };
 
 export const asyncActionStarted = state => {
-  console.log(this.state)
   return { ...state, loading: true };
 };
 

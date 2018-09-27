@@ -1,7 +1,11 @@
 import moment from "moment";
 import { toastr } from "react-redux-toastr";
 import cuid from "cuid";
-import { asyncActionError, asyncActionStart, asyncActionFinish } from '../async/asyncActions';
+import {
+  asyncActionError,
+  asyncActionStart,
+  asyncActionFinish
+} from "../async/asyncActions";
 
 export const updateProfile = user => async (
   dispatch,
@@ -81,33 +85,84 @@ export const deletePhoto = photo => async (
   const firestore = getFirestore();
   const user = firebase.auth().currentUser;
   try {
-    dispatch(asyncActionStart())
+    dispatch(asyncActionStart());
     await firebase.deleteFile(`${user.uid}/user_images/${photo.name}`);
     await firestore.delete({
       collection: "users",
       doc: user.uid,
       subcollections: [
-        { 
-          collection: "photos", 
-          doc:photo.id 
+        {
+          collection: "photos",
+          doc: photo.id
         }
       ]
     });
-    dispatch(asyncActionFinish())
+    dispatch(asyncActionFinish());
     toastr.success("Success", "Photo Deleted");
   } catch (error) {
-    dispatch(asyncActionError())
+    dispatch(asyncActionError());
     throw new Error("Problem deleting the photo");
   }
 };
 
-export const setMainPhoto = photo => async (dispatch,getState,{getFirebase}) =>{
-  const firebase = getFirebase();    
+export const setMainPhoto = photo => async (
+  dispatch,
+  getState,
+  { getFirebase }
+) => {
+  const firebase = getFirebase();
   try {
-      return await firebase.updateProfile({
-        photoURL:photo.url
-      })
+    return await firebase.updateProfile({
+      photoURL: photo.url
+    });
   } catch (error) {
-    throw new Error ('Problem setting new photo')
+    throw new Error("Problem setting new photo");
+  }
+};
+
+export const goingToEvent = event => async (
+  dispatch,
+  getState,
+  { getFirestore }
+) => {
+  const firestore = getFirestore();
+  const user = firestore.auth().currentUser;
+  const photoUrl = getState().firebase.profile.photoURL;
+  const attendee = {
+    going: true,
+    joinDate: Date.now(),
+    photoURL: photoUrl || '/assets/user.png',
+    displayName: user.displayName,
+    host: false
+  };
+
+  try {
+    await firestore.update(`events/${event.id}`, {
+      [`attendees.${user.uid}`]: attendee
+    });
+    await firestore.set(`event_attendee/${event.id}_${user.uid}`, {
+      eventId: event.id,
+      userUid: user.uid,
+      eventDate: event.date,
+      host: false
+    });
+    toastr.success("Success", "Successfully joined event");
+  } catch (error) {
+    toastr.error("Oops", "Problem Joining Event");
+  }
+};
+
+export const cancelGoingToEvent = (event) => async (dispatch,getState,{getFirestore}) => {
+  const firestore = getFirestore();
+  const user = firestore.auth().currentUser;
+  try {
+    await firestore.update(`events/${event.id}`,{
+      [`attendees.${user.uid}`] : firestore.FieldValue.delete()  // We delete individual object from firestore
+    })
+    await firestore.delete(`event_attendee/${event.id}_${user.uid}`);
+    toastr.success('Success','Successfully removed form event')
+  } catch (error) {
+    console.log(error);
+    toastr.error('Oops','Something went wrong')
   }
 }

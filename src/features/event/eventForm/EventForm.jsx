@@ -4,6 +4,7 @@ import React, { Component } from "react";
 import { Segment, Form, Button, Grid, Header } from "semantic-ui-react";
 import { reduxForm, Field } from "redux-form";
 import { connect } from "react-redux";
+import { withFirestore } from "react-redux-firebase";
 import {
   composeValidators,
   combineValidators,
@@ -12,31 +13,30 @@ import {
 } from "revalidate";
 import { geocodeByAddress, getLatLng } from "react-places-autocomplete";
 import Script from "react-load-script";
-import { createEvent, updateEvent } from "../eventActions";
-import cuid from "cuid";
-import moment from "moment";
+import { createEvent, updateEvent, cancelToggle } from "../eventActions";
 import TextInput from "../../../app/common/form/TextInput";
 import TextArea from "../../../app/common/form/TextArea";
 import SelectInput from "../../../app/common/form/SelectInput";
 import DateInput from "../../../app/common/form/DateInput";
 import PlaceInput from "../../../app/common/form/PlaceInput";
 
-const mapState = (state, ownProps) => {
-  const eventId = ownProps.match.params.id;
+const mapState = state => {
   let event = {};
 
-  if (eventId && state.events.length > 0) {
-    event = state.events.filter(evt => evt.id === eventId)[0];
+  if (state.firestore.ordered.events && state.firestore.ordered.events[0]) {
+    event = state.firestore.ordered.events[0];
   }
 
   return {
-    initialValues: event
+    initialValues: event,
+    event
   };
 };
 
 const actions = {
   createEvent,
-  updateEvent
+  updateEvent,
+  cancelToggle
 };
 
 const category = [
@@ -69,6 +69,29 @@ class EventForm extends Component {
     scriptLoaded: false
   };
 
+  async componentDidMount() {
+    const { firestore, match } = this.props;    
+    await firestore.setListener(`events/${match.params.id}`);
+    
+    // let event = await firestore.get(`events/${match.params.id}`);
+    //  In Above code we only get data once and then set state but we need to set listner to
+    // get live changes like cancel event and not cancel it turns content and color
+
+    // This is when we update an event like event title and other stuff and dont change venue then it
+    //  become 0 as its been using local state which is defined as empty above and took
+    // But we addressed this in form as we re using listener
+    // if(event.exists){
+    //   this.setState({
+    //     venueLatLng : event.data().venueLatLng
+    //   })
+    // }
+  }
+
+  async componentWillUnmount(){
+    const { firestore, match } = this.props;    
+    await firestore.unsetListener(`events/${match.params.id}`);
+  }
+
   handleCitySelect = selectedCity => {
     geocodeByAddress(selectedCity)
       .then(results => getLatLng(results[0]))
@@ -96,19 +119,15 @@ class EventForm extends Component {
   };
 
   onFormSubmit = values => {
-    values.date = moment(values.date).format();
     values.venueLatLng = this.state.venueLatLng;
     if (this.props.initialValues.id) {
+      if(Object.keys(values.venueLatLng).length === 0){
+        values.venueLatLng = this.props.event.venueLatLng
+      }
       this.props.updateEvent(values);
       this.props.history.goBack();
     } else {
-      const newEvent = {
-        ...values,
-        id: cuid(),
-        hostPhotoURL: "/assets/user.png",
-        hostedBy: "Bob"
-      };
-      this.props.createEvent(newEvent);
+      this.props.createEvent(values);
       this.props.history.push("/events");
     }
   };
@@ -120,7 +139,7 @@ class EventForm extends Component {
   handleScriptLoaded = () => this.setState({ scriptLoaded: true });
 
   render() {
-    const { invalid, submitting, pristine } = this.props;
+    const { invalid, submitting, pristine, event, cancelToggle } = this.props;
     return (
       <Grid>
         <Script
@@ -194,6 +213,15 @@ class EventForm extends Component {
               <Button onClick={this.handleCancelForm} type="button">
                 Cancel
               </Button>
+              <Button
+                onClick={() => {
+                  cancelToggle(!event.cancelled, event.id);
+                }}
+                type="button"
+                floated="right"
+                color={event.cancelled ? "green" : "red"}
+                content={event.cancelled ? "Reactivate Event" : "Cancel Event"}
+              />
             </Form>
           </Segment>
         </Grid.Column>
@@ -202,11 +230,13 @@ class EventForm extends Component {
   }
 }
 
-export default connect(
-  mapState,
-  actions
-)(
-  reduxForm({ form: "eventForm", enableReinitialize: true, validate })(
-    EventForm
+export default withFirestore(
+  connect(
+    mapState,
+    actions
+  )(
+    reduxForm({ form: "eventForm", enableReinitialize: true, validate })(
+      EventForm
+    )
   )
 );
