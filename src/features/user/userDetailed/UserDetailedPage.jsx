@@ -10,8 +10,11 @@ import UserDetailedPhoto from "./UserDetailedPhoto";
 import UserDetailedEvents from "./UserDetailedEvents";
 import { userDetailedQuery } from '../userQuery'
 import LoadingComponent from "../../../app/common/LoadingComponent/LoadingComponent";
+import { getUserEvents } from '../userActions'
 
-
+const actions ={
+  getUserEvents
+}
 
 const mapState = (state, ownProps) => {
   let userUid = null;
@@ -26,6 +29,8 @@ const mapState = (state, ownProps) => {
   return {
     profile,
     userUid,
+    events:state.events,
+    eventsLoading: state.async.loading,
     auth: state.firebase.auth,
     photos: state.firestore.ordered.photos,
     requesting: state.firestore.status.requesting //This is simple check if data is loaded or not so we can use loading accordingly
@@ -33,8 +38,17 @@ const mapState = (state, ownProps) => {
 };
 
 class UserDetailedPage extends Component {
+
+  async componentDidMount(){
+    await this.props.getUserEvents(this.props.userUid);    
+  }
+
+  changeTab = (e, data) => {
+    this.props.getUserEvents(this.props.userUid, data.activeIndex);  
+  }
+
   render() {
-    const { profile, photos, auth, match, requesting } = this.props;
+    const { profile, photos, auth, match, requesting, events, eventsLoading } = this.props;
     const isCurrentUser = auth.uid === match.params.id;
     const loading = Object.values(requesting).some(a => a === true);
 
@@ -46,7 +60,7 @@ class UserDetailedPage extends Component {
         <UserDetailedDescription profile={profile} />
         <UserDetailedSidebar isCurrentUser={isCurrentUser} />
         {photos && photos.length > 0 && <UserDetailedPhoto photos={photos} />}
-        <UserDetailedEvents />
+        <UserDetailedEvents events={events} eventsLoading={eventsLoading} changeTab={this.changeTab}/>
       </Grid>
     );
   }
@@ -55,7 +69,7 @@ class UserDetailedPage extends Component {
 export default compose(
   connect(
     mapState,
-    null
+    actions
   ),
   firestoreConnect((auth,userUid) => userDetailedQuery(auth,userUid))
 )(UserDetailedPage);

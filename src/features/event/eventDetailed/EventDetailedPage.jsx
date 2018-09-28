@@ -43,7 +43,7 @@ class EventDetailedPage extends Component {
     const { event, auth, goingToEvent, cancelGoingToEvent } = this.props;
     const attendees =
       event && event.attendees && objectToArray(event.attendees);
-    const isHost = event.hostUid === auth.id;
+    const isHost = event.hostUid === auth.uid;
     const isGoing = attendees && attendees.some(a => a.id === auth.uid); //Check if its in attendees list
 
     return (

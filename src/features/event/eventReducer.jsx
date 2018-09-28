@@ -18,7 +18,7 @@ export const deleteEvent = (state, payload) => {
     return [...state.filter(event => event.id !== payload.eventId)]
 }
 
-export const fetchEvents = (state, payload) => {    
+export const fetchEvents = (state, payload) => {        
     return payload.events;
 }
 
